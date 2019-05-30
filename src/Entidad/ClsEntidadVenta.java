@@ -30,6 +30,15 @@ public class ClsEntidadVenta {
     private String strTecnico;
     private String strObs;
     private String strIdOrden;
+    private String strNumeroOrden;
+
+    public String getStrNumeroOrden() {
+        return strNumeroOrden;
+    }
+
+    public void setStrNumeroOrden(String strNumeroOrden) {
+        this.strNumeroOrden = strNumeroOrden;
+    }
 
     public String getStrIdOrden() {
         return strIdOrden;

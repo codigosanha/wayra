@@ -23,7 +23,7 @@ public class ClsVentaPendiente {
     //-------------------------------------------------------------------------------------------------- 
     public void agregarVenta(ClsEntidadVenta Venta) {
         try {
-            CallableStatement statement = connection.prepareCall("{call SP_I_VentaPendiente(?,?,?,?,?,?,?,?,?)}");
+            CallableStatement statement = connection.prepareCall("{call SP_I_VentaPendiente(?,?,?,?,?,?,?,?,?,?)}");
             statement.setString("pidcliente", Venta.getStrIdCliente());
             statement.setString("pidempleado", Venta.getStrIdEmpleado());
             statement.setDate("pfecha", new java.sql.Date(Venta.getStrFechaVenta().getTime()));
@@ -33,6 +33,7 @@ public class ClsVentaPendiente {
             statement.setString("pigv", Venta.getStrIgvVenta());
             statement.setString("ptotalpagar", Venta.getStrTotalPagarVenta());
             statement.setString("pestado", Venta.getStrEstadoVenta());
+            statement.setString("pnumeroorden",Venta.getStrNumeroOrden());
 
             statement.execute();
 

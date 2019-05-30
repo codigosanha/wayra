@@ -869,7 +869,7 @@ void BuscarPermisos(){
     }//GEN-LAST:event_mVentadeActionPerformed
 
     private void mVentareActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mVentareActionPerformed
-       Consultas.FrmVentasPendientes VentasRealizadas=new Consultas.FrmVentasPendientes();
+       Consultas.FrmVentasRealizadas VentasRealizadas=new Consultas.FrmVentasRealizadas();
        Escritorio.add(VentasRealizadas);
        VentasRealizadas.show();
     }//GEN-LAST:event_mVentareActionPerformed

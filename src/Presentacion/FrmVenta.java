@@ -18,6 +18,7 @@ import java.awt.Component;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,18 +34,20 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
+import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import net.sf.jasperreports.engine.util.JRLoader;
 
 public class FrmVenta extends javax.swing.JInternalFrame {
-    
+
     private Connection connection = new ClsConexion().getConection();
     String Total;
     String strCodigo;
     String accion;
     String numVenta, tipoDocumento;
-    
+
     int registros;
     String id[] = new String[50];
     //String Datos[]=new String[50];
@@ -56,14 +59,14 @@ public class FrmVenta extends javax.swing.JInternalFrame {
     //-----------------------------------------------
     public String codigo;
     static Connection conn = null;
-    
+
     static ResultSet rs = null;
     static ResultSet rsp = null;
     DefaultTableModel dtm = new DefaultTableModel();
     DefaultTableModel dtmDetalle = new DefaultTableModel();
-    
+
     String criterio, busqueda;
-    
+
     public FrmVenta() {
         initComponents();
         //---------------------FECHA ACTUAL-------------------------------
@@ -77,7 +80,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         //---------------------ANCHO Y ALTO DEL FORM----------------------
         this.setSize(955, 505);
         cargarComboTipoDocumento();
-        
+        lblIdVentaPendiente.setText("0");
         lblIdProducto.setVisible(false);
         lblIdCliente.setVisible(false);
         txtDescripcionProducto.setVisible(false);
@@ -95,16 +98,16 @@ public class FrmVenta extends javax.swing.JInternalFrame {
 //-----------------------------------------------------------------------------------------------
 
     public String generaNumVenta() {
-        
+
         ClsVenta oVenta = new ClsVenta();
         try {
-            
+
             rs = oVenta.obtenerUltimoIdVenta();
             while (rs.next()) {
                 if (rs.getString(1) != null) {
                     Scanner s = new Scanner(rs.getString(1));
                     int c = s.useDelimiter("C").nextInt() + 1;
-                    
+
                     if (c < 10) {
                         return "C0000" + c;
                     }
@@ -121,7 +124,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                     }
                 }
             }
-            
+
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
@@ -132,9 +135,49 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             }
         }
         return "C00001";
-        
+
     }
-    
+
+    public String obtenerUltimaVentaPendiente() {
+        String idVenta = "0";
+        try {
+
+            ClsVentaPendiente venta = new ClsVentaPendiente();
+            rs = venta.obtenerUltimoIdVenta();
+            if (rs.next()) {
+                idVenta = rs.getString(1);
+            }
+
+        } catch (Exception ex) {
+            Logger.getLogger(FrmVenta.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return idVenta;
+    }
+
+    void printOrden(String idVentaPendiente) {
+        String idVenta = idVentaPendiente;
+        if (idVentaPendiente.equals("0")) {
+            idVenta = obtenerUltimaVentaPendiente();
+        }
+
+        System.out.println(idVentaPendiente);
+        Map p = new HashMap();
+        p.put("busqueda", idVenta);
+        p.put("numero_orden", String.format("%06d", Integer.parseInt(idVenta)));
+        JasperReport report;
+        JasperPrint print;
+
+        try {
+            report = JasperCompileManager.compileReport(new File("").getAbsolutePath() + "/src/Reportes/ReportOden.jrxml");
+            print = JasperFillManager.fillReport(report, p, connection);
+            JasperViewer view = new JasperViewer(print, false);
+            view.setTitle("Reporte de Venta");
+            view.setVisible(true);
+        } catch (JRException e) {
+            e.printStackTrace();
+        }
+    }
+
     void updateEstadoVentaPendiente() {
         ClsVentaPendiente ventas = new ClsVentaPendiente();
         ClsEntidadVenta venta = new ClsEntidadVenta();
@@ -157,11 +200,11 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         } catch (Exception ex) {
             Logger.getLogger(FrmVenta.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
     }
 
     void updateStockProducto(String idProducto, Double CantidadDetalle) {
-        System.out.println(idProducto +" "+CantidadDetalle);
+        System.out.println(idProducto + " " + CantidadDetalle);
         try {
             double stockActual = 0.00, nuevoStock = 0.00;
             ClsProducto productos = new ClsProducto();
@@ -170,12 +213,12 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             if (rsp.next()) {
                 stockActual = Double.parseDouble(rsp.getString(5));
             }
-            
+
             nuevoStock = stockActual + CantidadDetalle;
-            
+
             producto.setStrStockProducto(String.valueOf(nuevoStock));
             productos.actualizarProductoStock(idProducto, producto);
-            
+
         } catch (Exception ex) {
             Logger.getLogger(FrmVenta.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -185,7 +228,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         //--------------------PRESENTACION DE JTABLE----------------------
 
         TableCellRenderer render = new DefaultTableCellRenderer() {
-            
+
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 //aqui obtengo el render de la calse superior 
                 JLabel l = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -229,17 +272,17 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         }
         //Ocultar columa
         setOcultarColumnasJTable(tblDetalleProducto, new int[]{0, 5});
-        
+
     }
-    
+
     void limpiarCampos() {
-        
+
         txtTotalVenta.setText("0.0");
         txtDescuento.setText("0.0");
         txtSubTotal.setText("0.0");
         txtIGV.setText("0.0");
         txtTotalPagar.setText("0.0");
-        
+
         lblIdProducto.setText("");
         txtCodigoProducto.setText("");
         txtNombreProducto.setText("");
@@ -250,14 +293,15 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         txtTecnico.setText("");
         txtObs.setText("");
         txtCodigoProducto.requestFocus();
+        lblIdVentaPendiente.setText("0");
     }
-    
+
     void mirar() {
         btnMostrarPendientes.setEnabled(true);
         btnGuardar.setEnabled(false);
         btnCancelar.setEnabled(false);
         btnSalir.setEnabled(true);
-        
+
         cboTipoDocumento.setEnabled(false);
         txtCodigoProducto.setEnabled(false);
         txtSerie.setEnabled(false);
@@ -274,7 +318,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         btnLimpiarTabla.setEnabled(false);
         chkCambiarNumero.setEnabled(false);
         chkCambiarNumero.setSelected(false);
-        
+
         txtTotalVenta.setText("0.0");
         txtDescuento.setText("0.0");
         txtSubTotal.setText("0.0");
@@ -291,15 +335,15 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         txtObs.setText("");
         txtCodigoProducto.requestFocus();
     }
-    
+
     void modificar() {
-        
+
         btnMostrarPendientes.setEnabled(false);
-        
+
         btnGuardar.setEnabled(true);
         btnCancelar.setEnabled(true);
         btnSalir.setEnabled(false);
-        
+
         cboTipoDocumento.setEnabled(true);
         txtCodigoProducto.setEnabled(true);
         txtSerie.setEnabled(true);
@@ -307,28 +351,28 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         txtFecha.setEnabled(true);
         txtTecnico.setEnabled(true);
         txtObs.setEnabled(true);
-        
+
         btnBuscarCliente.setEnabled(true);
         btnBuscarProducto.setEnabled(true);
         btnAgregarProducto.setEnabled(true);
         btnEliminarProducto.setEnabled(true);
         btnLimpiarTabla.setEnabled(true);
         chkCambiarNumero.setEnabled(true);
-        
+
         txtCodigoProducto.requestFocus();
     }
-    
+
     void cargarComboTipoDocumento() {
         ClsTipoDocumento tipodocumento = new ClsTipoDocumento();
         ArrayList<ClsEntidadTipoDocumento> tipodocumentos = tipodocumento.listarTipoDocumento();
         Iterator iterator = tipodocumentos.iterator();
         DefaultComboBoxModel DefaultComboBoxModel = new DefaultComboBoxModel();
         DefaultComboBoxModel.removeAllElements();
-        
+
         cboTipoDocumento.removeAll();
         String fila[] = new String[2];
         intContador = 0;
-        
+
         while (iterator.hasNext()) {
             ClsEntidadTipoDocumento TipoDocumento = new ClsEntidadTipoDocumento();
             TipoDocumento = (ClsEntidadTipoDocumento) iterator.next();
@@ -340,17 +384,17 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         }
         cboTipoDocumento.setModel(DefaultComboBoxModel);
     }
-    
+
     void BuscarProductoPorCodigo() {
         String busqueda = null;
         busqueda = txtCodigoProducto.getText();
         try {
             ClsProducto oProducto = new ClsProducto();
-            
+
             rs = oProducto.listarProductoActivoPorParametro("codigo", busqueda);
             while (rs.next()) {
                 if (rs.getString(2).equals(busqueda)) {
-                    
+
                     lblIdProducto.setText(rs.getString(1));
                     txtNombreProducto.setText(rs.getString(3));
                     txtDescripcionProducto.setText(rs.getString(4));
@@ -363,14 +407,14 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                 }
                 break;
             }
-            
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage());
             System.out.println(ex.getMessage());
         }
-        
+
     }
-    
+
     void BuscarClientePorDefecto() {
         try {
             ClsCliente oCliente = new ClsCliente();
@@ -380,14 +424,14 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                 txtNombreCliente.setText(rs.getString(2));
                 break;
             }
-            
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage());
             System.out.println(ex.getMessage());
         }
-        
+
     }
-    
+
     private void setOcultarColumnasJTable(JTable tbl, int columna[]) {
         for (int i = 0; i < columna.length; i++) {
             tbl.getColumnModel().getColumn(columna[i]).setMaxWidth(0);
@@ -412,7 +456,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             System.out.println(ex.getMessage());
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -942,7 +986,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
 //        txtIdEmpleado.setText(IdEmpleado);
         BuscarClientePorDefecto();
         cargarComboTipoDocumento();
-        
+
 
     }//GEN-LAST:event_formComponentShown
 
@@ -959,7 +1003,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         cliente.toFront();
         cliente.setVisible(true);
     }//GEN-LAST:event_btnBuscarClienteActionPerformed
-    
+
     void CalcularTotal() {
         DecimalFormatSymbols simbolos = new DecimalFormatSymbols();
         simbolos.setDecimalSeparator('.');
@@ -970,37 +1014,37 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         total_prod = precio_prod * cant_prod;
         txtTotalProducto.setText(String.valueOf(formateador.format(total_prod)));
     }
-    
+
     public int recorrer(int id) {
         int fila = 0, valor = -1;
-        
+
         fila = tblDetalleProducto.getRowCount();
-        
+
         for (int f = 0; f < fila; f++) {
             if (Integer.parseInt(String.valueOf(dtmDetalle.getValueAt(f, 0))) == id) {
-                
+
                 valor = f;
                 //JOptionPane.showMessageDialog(null, "te encontre!");
                 break;
-                
+
             } else {
                 //JOptionPane.showMessageDialog(null, "no estas!");
                 valor = -1;
             }
-            
+
         }
         return valor;
     }
-    
+
     void agregardatos(int item, String cod, String nom, String descrip, double cant, double cost, double pre, double tot, String tec, String obs) {
-        
+
         int p = recorrer(item);
         double n_cant, n_total;
         if (p > -1) {
-            
+
             n_cant = Double.parseDouble(String.valueOf(tblDetalleProducto.getModel().getValueAt(p, 4))) + cant;
             tblDetalleProducto.setValueAt(n_cant, p, 4);
-            
+
             n_total = Double.parseDouble(String.valueOf(tblDetalleProducto.getModel().getValueAt(p, 4))) * Double.parseDouble(String.valueOf(tblDetalleProducto.getModel().getValueAt(p, 5)));
             tblDetalleProducto.setValueAt(n_total, p, 7);
 
@@ -1011,7 +1055,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         }
         tblDetalleProducto.setModel(dtmDetalle);
     }
-    
+
     void CalcularValor_Venta() {
         int fila = 0;
         double valorVenta = 0;
@@ -1021,7 +1065,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         }
         txtTotalVenta.setText(String.valueOf(valorVenta));
     }
-    
+
     void CalcularSubTotal() {
         double subtotal = 0;
         DecimalFormatSymbols simbolos = new DecimalFormatSymbols();
@@ -1030,7 +1074,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         subtotal = Double.parseDouble(txtTotalPagar.getText()) / 1.18;
         txtSubTotal.setText(String.valueOf(formateador.format(subtotal)));
     }
-    
+
     void CalcularIGV() {
         double igv = 0;
         DecimalFormatSymbols simbolos = new DecimalFormatSymbols();
@@ -1039,7 +1083,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         igv = Double.parseDouble(txtSubTotal.getText()) * 0.18;
         txtIGV.setText(String.valueOf(formateador.format(igv)));
     }
-    
+
     void CalcularTotal_Pagar() {
         double totalpagar = 0;
         DecimalFormatSymbols simbolos = new DecimalFormatSymbols();
@@ -1048,7 +1092,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         totalpagar = Double.parseDouble(txtTotalVenta.getText()) - Double.parseDouble(txtDescuento.getText());
         txtTotalPagar.setText(String.valueOf(formateador.format(totalpagar)));
     }
-    
+
     void limpiarTabla() {
         try {
             int filas = tblDetalleProducto.getRowCount();
@@ -1062,7 +1106,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
 
     private void btnAgregarProductoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarProductoActionPerformed
         double stock, cant;
-        
+
         if (!txtCantidadProducto.getText().equals("")) {
             if (txtCantidadProducto.getText().equals("")) {
                 txtCantidadProducto.setText("0");
@@ -1070,7 +1114,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             } else {
                 cant = Double.parseDouble(txtCantidadProducto.getText());
             }
-            
+
             if (cant > 0) {
                 stock = Double.parseDouble(txtStockProducto.getText());
                 cant = Double.parseDouble(txtCantidadProducto.getText());
@@ -1086,7 +1130,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                     String d9 = txtTecnico.getText();
                     String d10 = txtObs.getText();
                     agregardatos(d1, d2, d3, d4, d5, d6, d7, d8, d9, d10);
-                    
+
                     CalcularValor_Venta();
                     CalcularTotal_Pagar();
                     CalcularSubTotal();
@@ -1094,7 +1138,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
 
                     //txtCantidadProducto.setText("");
                     txtTotalProducto.setText("");
-                    
+
                     txtCodigoProducto.setText("");
                     txtNombreProducto.setText("");
                     txtStockProducto.setText("");
@@ -1106,12 +1150,12 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                     JOptionPane.showMessageDialog(null, "Stock Insuficiente");
                     txtCantidadProducto.requestFocus();
                 }
-                
+
             } else {
                 JOptionPane.showMessageDialog(null, "Ingrese Cantidad mayor a 0");
                 txtCantidadProducto.requestFocus();
             }
-            
+
         } else {
             JOptionPane.showMessageDialog(null, "Ingrese cantidad");
             txtCantidadProducto.requestFocus();
@@ -1137,7 +1181,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             CalcularIGV();
         } else if (fila == 0) {
             dtmDetalle.removeRow(fila);
-            
+
             txtTotalVenta.setText("0.0");
             txtDescuento.setText("0.0");
             txtSubTotal.setText("0.0");
@@ -1206,7 +1250,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             if (accion.equals("Nuevo")) {
                 ClsVentaPendiente ventas = new ClsVentaPendiente();
                 ClsEntidadVenta venta = new ClsEntidadVenta();
-                
+
                 venta.setStrIdCliente(lblIdCliente.getText());
                 venta.setStrIdEmpleado(IdEmpleado);
                 venta.setStrFechaVenta(txtFecha.getDate());
@@ -1215,29 +1259,31 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                 venta.setStrSubTotalVenta(txtSubTotal.getText());
                 venta.setStrIgvVenta(txtIGV.getText());
                 venta.setStrTotalPagarVenta(txtTotalPagar.getText());
-                
+
                 venta.setStrEstadoVenta("PENDIENTE");
-                if (lblIdVentaPendiente.getText().equals("")) {
+                if (lblIdVentaPendiente.getText().equals("0")) {
+                    venta.setStrNumeroOrden(String.format("%06d", Integer.parseInt(obtenerUltimaVentaPendiente())+1));
                     ventas.agregarVenta(venta);
                 } else {
                     ventas.modificarVenta(lblIdVentaPendiente.getText(), venta);
                     reponerStockDetalleVentaPendiente();
                     eliminarDetalleVentaPendiente();
                 }
-                
+
                 guardarDetallePendiente();
-                
+
+                printOrden(lblIdVentaPendiente.getText());
             }
-            
+
             mirar();
             tipoDocumento = cboTipoDocumento.getSelectedItem().toString();
             limpiarTabla();
             numVenta = generaNumVenta();
             txtNumero.setText(numVenta);
             BuscarClientePorDefecto();
-            
+
         }
-        
+
         if (result == JOptionPane.NO_OPTION) {
             JOptionPane.showMessageDialog(null, "Venta Anulada!");
         }
@@ -1274,19 +1320,18 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                 venta.setStrSubTotalVenta(txtSubTotal.getText());
                 venta.setStrIgvVenta(txtIGV.getText());
                 venta.setStrTotalPagarVenta(txtTotalPagar.getText());
-                
+
                 venta.setStrEstadoVenta("EMITIDO");
                 venta.setStrIdOrden(lblIdVentaPendiente.getText());
                 ventas.agregarVenta(venta);
-                if (!lblIdVentaPendiente.getText().equals("")) {
+                if (!lblIdVentaPendiente.getText().equals("0")) {
                     updateEstadoVentaPendiente();
                     reponerStockDetalleVentaPendiente();
                 }
                 guardarDetalle();
-                
-                
+
             }
-            
+
             mirar();
             tipoDocumento = cboTipoDocumento.getSelectedItem().toString();
             limpiarTabla();
@@ -1298,20 +1343,20 @@ public class FrmVenta extends javax.swing.JInternalFrame {
                 //Dese imprimir el Comprobante?
                 int imprime = JOptionPane.showConfirmDialog(this, "¿Desea Imprimir el Ticket?", "Mensaje del Sistema", JOptionPane.YES_NO_OPTION);
                 if (imprime == JOptionPane.YES_OPTION) {
-                    
+
                     obtenerUltimoIdVenta_print();
                     Map p = new HashMap();
                     p.put("busqueda", idventa_print);
-                    
+
                     JasperReport report;
                     JasperPrint print;
                     try {
-                        
+
                         report = JasperCompileManager.compileReport(new File("").getAbsolutePath() + "/src/Reportes/RptVentaTicket.jrxml");
                         print = JasperFillManager.fillReport(report, p, connection);
                         JasperViewer view = new JasperViewer(print, false);
                         JasperPrintManager.printReport(print, false);
-                        
+
                     } catch (JRException e) {
                         e.printStackTrace();
                     }
@@ -1320,7 +1365,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             //fin imprimir            
 
         }
-        
+
         if (result == JOptionPane.NO_OPTION) {
             JOptionPane.showMessageDialog(null, "Venta Anulada!");
         }
@@ -1361,6 +1406,11 @@ public class FrmVenta extends javax.swing.JInternalFrame {
 
     private void btnImprimir1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImprimir1ActionPerformed
         // TODO add your handling code here:
+        Presentacion.FrmVentaRecibo VentaRecibo = new Presentacion.FrmVentaRecibo();
+        Presentacion.FrmPrincipal.Escritorio.add(VentaRecibo);
+        Presentacion.FrmVentaRecibo.txtDocumentoVenta.setText(tipoDocumento);
+        VentaRecibo.toFront();
+        VentaRecibo.setVisible(true);
     }//GEN-LAST:event_btnImprimir1ActionPerformed
 
     private void btnNuevoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNuevoActionPerformed
@@ -1381,7 +1431,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             System.out.println(ex.getMessage());
         }
     }
-    
+
     void obtenerUltimoIdVentaPendiente() {
         try {
             ClsVentaPendiente oVenta = new ClsVentaPendiente();
@@ -1394,9 +1444,9 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             System.out.println(ex.getMessage());
         }
     }
-    
+
     void guardarDetalle() {
-        
+
         obtenerUltimoIdVenta();
         ClsDetalleVenta detalleventas = new ClsDetalleVenta();
         ClsEntidadDetalleVenta detalleventa = new ClsEntidadDetalleVenta();
@@ -1404,7 +1454,7 @@ public class FrmVenta extends javax.swing.JInternalFrame {
         String codigo, strId;
         ClsEntidadProducto producto = new ClsEntidadProducto();
         int fila = 0;
-        
+
         double cant = 0, ncant = 0, stock = 0;
         fila = tblDetalleProducto.getRowCount();
         for (int f = 0; f < fila; f++) {
@@ -1417,45 +1467,47 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             detalleventa.setStrTecnicoDet(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 8)));
             detalleventa.setStrObsDet(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 9)));
             detalleventas.agregarDetalleVenta(detalleventa);
-            
+
             try {
                 ClsProducto oProducto = new ClsProducto();
-                
+
                 rs = oProducto.listarProductoActivoPorParametro("id", ((String) tblDetalleProducto.getValueAt(f, 0)));
                 while (rs.next()) {
                     cant = Double.parseDouble(rs.getString(5));
                 }
-                
+
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage());
                 System.out.println(ex.getMessage());
             }
-            
+
             strId = ((String) tblDetalleProducto.getValueAt(f, 0));
-            
+
             ncant = Double.parseDouble(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 4)));
-            
+
             stock = cant - ncant;
             producto.setStrStockProducto(String.valueOf(stock));
             productos.actualizarProductoStock(strId, producto);
-            
+
         }
     }
-    
+
     void guardarDetallePendiente() {
-        
-        obtenerUltimoIdVentaPendiente();
+        String idventapendiente = lblIdVentaPendiente.getText();
+        if (lblIdVentaPendiente.getText().equals("0")) {
+            idventapendiente = obtenerUltimaVentaPendiente();
+        }
         ClsDetalleVentaPendiente detalleventas = new ClsDetalleVentaPendiente();
         ClsEntidadDetalleVenta detalleventa = new ClsEntidadDetalleVenta();
         ClsProducto productos = new ClsProducto();
         String codigo, strId;
         ClsEntidadProducto producto = new ClsEntidadProducto();
         int fila = 0;
-        
+ 
         double cant = 0, ncant = 0, stock = 0;
         fila = tblDetalleProducto.getRowCount();
         for (int f = 0; f < fila; f++) {
-            detalleventa.setStrIdVenta(String.valueOf(idventa));
+            detalleventa.setStrIdVenta(idventapendiente);
             detalleventa.setStrIdProducto(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 0)));
             detalleventa.setStrCantidadDet(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 4)));
             detalleventa.setStrCostoDet(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 5)));
@@ -1464,28 +1516,28 @@ public class FrmVenta extends javax.swing.JInternalFrame {
             detalleventa.setStrTecnicoDet(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 8)));
             detalleventa.setStrObsDet(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 9)));
             detalleventas.agregarDetalleVenta(detalleventa);
-            
+
             try {
                 ClsProducto oProducto = new ClsProducto();
-                
+
                 rs = oProducto.listarProductoActivoPorParametro("id", ((String) tblDetalleProducto.getValueAt(f, 0)));
                 while (rs.next()) {
                     cant = Double.parseDouble(rs.getString(5));
                 }
-                
+
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage());
                 System.out.println(ex.getMessage());
             }
-            
+
             strId = ((String) tblDetalleProducto.getValueAt(f, 0));
-            
+
             ncant = Double.parseDouble(String.valueOf(tblDetalleProducto.getModel().getValueAt(f, 4)));
-            
+
             stock = cant - ncant;
             producto.setStrStockProducto(String.valueOf(stock));
             productos.actualizarProductoStock(strId, producto);
-            
+
         }
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -50,6 +50,7 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
     public FrmVentasPendientes() {
         initComponents();
         lblIdVenta.setVisible(false);
+        rbnNumeroOrden.setSelected(true);
 
         //---------------------ANCHO Y ALTO DEL FORM----------------------
         this.setSize(769, 338);
@@ -116,7 +117,7 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
     }
 
     void PasarVenta() {
-       
+
         ClsVentaPendiente venta = new ClsVentaPendiente();
         ClsDetalleVentaPendiente detalle = new ClsDetalleVentaPendiente();
         DefaultTableModel dtm = (DefaultTableModel) FrmVenta.tblDetalleProducto.getModel();
@@ -161,18 +162,20 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
     }
 
     void BuscarVenta() {
-        String placa = txtPlaca.getText();
-        String titulos[] = {"ID", "Placa", "Fecha", "Empleado", "Estado", "Valor Venta", "Descuento", "Total"};
+        String buscar = txtBuscar.getText();
+        String campo = "orden";
+        String titulos[] = {"ID", "Placa", "Fecha", "Empleado", "Estado", "Valor Venta", "Descuento", "Total","Numero Orden"};
         dtm.setColumnIdentifiers(titulos);
 
         ClsVentaPendiente venta = new ClsVentaPendiente();
 
-        //fecha_ini=dcFechaini.getDate();
-        //fecha_fin=dcFechafin.getDate();
+        if (rbnPlaca.isSelected()) {
+            campo = "placa";
+        }
         try {
-            rs = venta.listarVentaPorParametro("nombre", placa);
+            rs = venta.listarVentaPorParametro(campo, buscar);
             boolean encuentra = false;
-            String Datos[] = new String[11];
+            String Datos[] = new String[12];
             int f, i;
             f = dtm.getRowCount();
             if (f > 0) {
@@ -189,7 +192,7 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
                 Datos[5] = (String) rs.getString(5);
                 Datos[6] = (String) rs.getString(6);
                 Datos[7] = (String) rs.getString(9);
-
+                Datos[8] = (String) rs.getString(12);
                 dtm.addRow(Datos);
                 encuentra = true;
 
@@ -345,14 +348,16 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        buttonGroup1 = new javax.swing.ButtonGroup();
         jScrollPane5 = new javax.swing.JScrollPane();
         tblVenta = new javax.swing.JTable();
         jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
         btnBuscar = new javax.swing.JButton();
         lblIdVenta = new javax.swing.JLabel();
-        txtPlaca = new javax.swing.JTextField();
+        txtBuscar = new javax.swing.JTextField();
         btnConcluir = new javax.swing.JButton();
+        rbnNumeroOrden = new javax.swing.JRadioButton();
+        rbnPlaca = new javax.swing.JRadioButton();
         btnVerDetalle = new javax.swing.JButton();
         lblEstado = new javax.swing.JLabel();
         jScrollPane6 = new javax.swing.JScrollPane();
@@ -391,11 +396,6 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("Opciones de busqueda y anulación"));
         jPanel1.setLayout(null);
 
-        jLabel1.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        jLabel1.setText("Nro.  Placa");
-        jPanel1.add(jLabel1);
-        jLabel1.setBounds(20, 20, 70, 20);
-
         btnBuscar.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Iconos/Buscar_32.png"))); // NOI18N
         btnBuscar.setText("Buscar");
         btnBuscar.addActionListener(new java.awt.event.ActionListener() {
@@ -404,17 +404,17 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
             }
         });
         jPanel1.add(btnBuscar);
-        btnBuscar.setBounds(140, 20, 110, 50);
+        btnBuscar.setBounds(250, 20, 110, 50);
         jPanel1.add(lblIdVenta);
         lblIdVenta.setBounds(320, 20, 40, 20);
 
-        txtPlaca.addActionListener(new java.awt.event.ActionListener() {
+        txtBuscar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtPlacaActionPerformed(evt);
+                txtBuscarActionPerformed(evt);
             }
         });
-        jPanel1.add(txtPlaca);
-        txtPlaca.setBounds(20, 40, 110, 20);
+        jPanel1.add(txtBuscar);
+        txtBuscar.setBounds(20, 50, 210, 20);
 
         btnConcluir.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Iconos/Buscar_32.png"))); // NOI18N
         btnConcluir.setText("Pasar a Venta");
@@ -425,6 +425,21 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
         });
         jPanel1.add(btnConcluir);
         btnConcluir.setBounds(570, 20, 140, 50);
+
+        buttonGroup1.add(rbnNumeroOrden);
+        rbnNumeroOrden.setText("Nro. de Orden");
+        rbnNumeroOrden.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                rbnNumeroOrdenActionPerformed(evt);
+            }
+        });
+        jPanel1.add(rbnNumeroOrden);
+        rbnNumeroOrden.setBounds(20, 20, 110, 23);
+
+        buttonGroup1.add(rbnPlaca);
+        rbnPlaca.setText("Nro. Placa");
+        jPanel1.add(rbnPlaca);
+        rbnPlaca.setBounds(150, 20, 80, 23);
 
         getContentPane().add(jPanel1);
         jPanel1.setBounds(10, 10, 730, 90);
@@ -513,9 +528,9 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_tblDetalleVentaMouseClicked
 
-    private void txtPlacaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPlacaActionPerformed
+    private void txtBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtBuscarActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_txtPlacaActionPerformed
+    }//GEN-LAST:event_txtBuscarActionPerformed
 
     private void btnConcluirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConcluirActionPerformed
         // TODO add your handling code here:
@@ -528,18 +543,24 @@ public class FrmVentasPendientes extends javax.swing.JInternalFrame {
 
     }//GEN-LAST:event_btnConcluirActionPerformed
 
+    private void rbnNumeroOrdenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rbnNumeroOrdenActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_rbnNumeroOrdenActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnBuscar;
     private javax.swing.JButton btnConcluir;
     private javax.swing.JButton btnVerDetalle;
-    private javax.swing.JLabel jLabel1;
+    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JLabel lblEstado;
     private javax.swing.JLabel lblIdVenta;
+    private javax.swing.JRadioButton rbnNumeroOrden;
+    private javax.swing.JRadioButton rbnPlaca;
     private javax.swing.JTable tblDetalleVenta;
     private javax.swing.JTable tblVenta;
-    private javax.swing.JTextField txtPlaca;
+    private javax.swing.JTextField txtBuscar;
     // End of variables declaration//GEN-END:variables
 }
